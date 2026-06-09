@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Media Report — STQC Toolkit{% endblock %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="/">Home</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+        <span>Media Report</span>
+    </div>
+    <h1 class="page-title">
+        <div class="tool-icon-inline" style="background: linear-gradient(135deg, #f59e0b, #fbbf24)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        </div>
+        Media Report
+    </h1>
+    <p class="page-description">Upload either the detail or summary CSV from the Media Crawler to see media distribution dashboards.</p>
+</div>
+
+<div class="tab-bar glass-card">
+    <button class="tab-btn active" data-tab="summary" id="tab-summary-btn">Summary CSV</button>
+    <button class="tab-btn" data-tab="detail" id="tab-detail-btn">Detail CSV</button>
+</div>
+
+<div class="upload-section glass-card" id="upload-section">
+    <div class="file-upload" id="report-file-zone">
+        <input type="file" id="report-csv" accept=".csv" hidden>
+        <div class="file-upload-content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="40" height="40"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>Drop your <strong>media CSV</strong> here or <span class="file-browse">browse</span></p>
+            <span class="form-hint" id="upload-hint">Summary CSV: Page URL, Total Media, Images, Videos, Audio, Iframes, ...</span>
+        </div>
+    </div>
+</div>
+
+<div id="dashboard" style="display:none;">
+    <div class="stats-bar">
+        <div class="stat-card glass-card">
+            <div class="stat-icon" style="--accent: #f59e0b">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="stat-info"><span class="stat-value" id="kpi-total">0</span><span class="stat-label" id="kpi-total-label">Total</span></div>
+        </div>
+        <div class="stat-card glass-card">
+            <div class="stat-icon" style="--accent: #10b981">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div class="stat-info"><span class="stat-value" id="kpi-images">0</span><span class="stat-label">Images</span></div>
+        </div>
+        <div class="stat-card glass-card">
+            <div class="stat-icon" style="--accent: #6366f1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </div>
+            <div class="stat-info"><span class="stat-value" id="kpi-videos">0</span><span class="stat-label">Videos</span></div>
+        </div>
+        <div class="stat-card glass-card">
+            <div class="stat-icon" style="--accent: #06b6d4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+            <div class="stat-info"><span class="stat-value" id="kpi-audio">0</span><span class="stat-label">Audio</span></div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card glass-card">
+            <h3 class="chart-title">Media Type Distribution</h3>
+            <div class="chart-container"><canvas id="typeChart"></canvas></div>
+        </div>
+        <div class="chart-card glass-card">
+            <h3 class="chart-title" id="chart2-title">Top Pages by Media Count</h3>
+            <div class="chart-container"><canvas id="pagesChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="table-card glass-card">
+        <div class="table-header">
+            <h3 class="chart-title">Data</h3>
+            <div class="table-controls">
+                <input type="text" class="form-input table-search" id="table-search" placeholder="Search...">
+                <select class="form-input table-filter" id="type-filter">
+                    <option value="">All Types</option>
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                    <option value="audio">Audio</option>
+                    <option value="iframe">Iframe</option>
+                    <option value="svg">SVG</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table class="data-table" id="data-table">
+                <thead><tr id="table-head"></tr></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+        <div class="table-footer"><span id="table-count">0 rows</span></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    setupFileUpload('report-file-zone', 'report-csv', null);
+    let currentTab = 'summary';
+    let allData = [];
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTab = btn.dataset.tab;
+            document.getElementById('upload-hint').textContent = currentTab === 'summary'
+                ? 'Summary CSV: Page URL, Total Media, Images, Videos, Audio, Iframes, ...'
+                : 'Detail CSV: parent_url, media_type, media_url, tag, alt_title, http_status';
+        });
+    });
+
+    document.getElementById('report-csv').addEventListener('change', async function() {
+        if (!this.files.length) return;
+        const formData = new FormData();
+        formData.append('csv_file', this.files[0]);
+        try {
+            const resp = await fetch('/api/parse-csv', { method: 'POST', body: formData });
+            const result = await resp.json();
+            if (result.error) { alert(result.error); return; }
+            allData = result.rows;
+            document.getElementById('upload-section').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            if (currentTab === 'detail') buildDetailDashboard(result.headers, result.rows);
+            else buildSummaryDashboard(result.headers, result.rows);
+        } catch (err) { alert('Failed: ' + err.message); }
+    });
+
+    function buildSummaryDashboard(headers, rows) {
+        const pages = rows.length;
+        const images = rows.reduce((s, r) => s + (parseInt(r['Images'])||0), 0);
+        const videos = rows.reduce((s, r) => s + (parseInt(r['Videos'])||0), 0);
+        const audio = rows.reduce((s, r) => s + (parseInt(r['Audio'])||0), 0);
+        const iframes = rows.reduce((s, r) => s + (parseInt(r['Iframes'])||0), 0);
+        const embeds = rows.reduce((s, r) => s + (parseInt(r['Embeds/Objects'])||0), 0);
+        const svg = rows.reduce((s, r) => s + (parseInt(r['SVG (inline)'])||0), 0);
+        const totalMedia = rows.reduce((s, r) => s + (parseInt(r['Total Media'])||0), 0);
+
+        document.getElementById('kpi-total').textContent = totalMedia;
+        document.getElementById('kpi-total-label').textContent = 'Total Media';
+        document.getElementById('kpi-images').textContent = images;
+        document.getElementById('kpi-videos').textContent = videos;
+        document.getElementById('kpi-audio').textContent = audio;
+
+        const typeData = { Images: images, Videos: videos, Audio: audio, Iframes: iframes, 'Embeds/Objects': embeds, 'SVG': svg };
+        const typeColors = ['#10b981','#6366f1','#06b6d4','#f59e0b','#ec4899','#8b5cf6'];
+        new Chart(document.getElementById('typeChart'), {
+            type: 'doughnut',
+            data: { labels: Object.keys(typeData), datasets: [{ data: Object.values(typeData), backgroundColor: typeColors, borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Inter' } } } }, cutout: '65%' }
+        });
+
+        const top10 = [...rows].sort((a, b) => (parseInt(b['Total Media'])||0) - (parseInt(a['Total Media'])||0)).slice(0, 10);
+        new Chart(document.getElementById('pagesChart'), {
+            type: 'bar',
+            data: {
+                labels: top10.map(r => (r['Page URL']||'').replace(/https?:\/\//, '').substring(0, 35)),
+                datasets: [{ label: 'Media', data: top10.map(r => parseInt(r['Total Media'])||0), backgroundColor: 'rgba(245,158,11,0.6)', borderColor: '#f59e0b', borderWidth: 1, borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } }, y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } } } }
+        });
+
+        buildTable(headers, rows);
+    }
+
+    function buildDetailDashboard(headers, rows) {
+        const total = rows.length;
+        const typeCounts = {};
+        rows.forEach(r => { const t = r['media_type']||'unknown'; typeCounts[t] = (typeCounts[t]||0)+1; });
+
+        document.getElementById('kpi-total').textContent = total;
+        document.getElementById('kpi-total-label').textContent = 'Media Items';
+        document.getElementById('kpi-images').textContent = (typeCounts['image']||0) + (typeCounts['image (CSS bg)']||0);
+        document.getElementById('kpi-videos').textContent = typeCounts['video']||0;
+        document.getElementById('kpi-audio').textContent = typeCounts['audio']||0;
+
+        const typeColors = ['#10b981','#22d3ee','#6366f1','#06b6d4','#f59e0b','#ec4899','#8b5cf6','#64748b'];
+        new Chart(document.getElementById('typeChart'), {
+            type: 'doughnut',
+            data: { labels: Object.keys(typeCounts), datasets: [{ data: Object.values(typeCounts), backgroundColor: typeColors.slice(0, Object.keys(typeCounts).length), borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Inter' } } } }, cutout: '65%' }
+        });
+
+        // HTTP status of media
+        document.getElementById('chart2-title').textContent = 'Media HTTP Status';
+        const statusCounts = {};
+        rows.forEach(r => { const s = r['http_status']||'N/A'; statusCounts[s] = (statusCounts[s]||0)+1; });
+        const sColors = { '200': '#10b981', 'N/A': '#64748b', '404': '#ef4444', 'ERR': '#dc2626', 'TIMEOUT': '#f59e0b' };
+        new Chart(document.getElementById('pagesChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(statusCounts),
+                datasets: [{ label: 'Count', data: Object.values(statusCounts), backgroundColor: Object.keys(statusCounts).map(k => sColors[k]||'#6366f1'), borderWidth: 0, borderRadius: 6 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } }, y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } } } }
+        });
+
+        buildTable(headers, rows);
+    }
+
+    function buildTable(headers, rows) {
+        const displayHeaders = headers.filter(h => h);
+        document.getElementById('table-head').innerHTML = displayHeaders.map(h => `<th>${h}</th>`).join('');
+
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = data.slice(0, 500).map(row => {
+                return `<tr>${displayHeaders.map(h => `<td title="${(row[h]||'').replace(/"/g,'&quot;')}">${(row[h]||'').substring(0,120)}</td>`).join('')}</tr>`;
+            }).join('');
+            document.getElementById('table-count').textContent = `${data.length} rows` + (data.length > 500 ? ' (showing first 500)' : '');
+        }
+        renderTable(rows);
+
+        document.getElementById('table-search').addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            const tf = document.getElementById('type-filter').value;
+            let filtered = allData;
+            if (q) filtered = filtered.filter(r => Object.values(r).some(v => (v||'').toLowerCase().includes(q)));
+            if (tf) filtered = filtered.filter(r => (r['media_type']||r['Media Type']||'').toLowerCase().includes(tf));
+            renderTable(filtered);
+        });
+        document.getElementById('type-filter').addEventListener('change', () => {
+            document.getElementById('table-search').dispatchEvent(new Event('input'));
+        });
+    }
+});
+</script>
+{% endblock %}

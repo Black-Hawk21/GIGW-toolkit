@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Crawl Report — STQC Toolkit{% endblock %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="/">Home</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+        <span>Crawl Report</span>
+    </div>
+    <h1 class="page-title">
+        <div class="tool-icon-inline" style="background: linear-gradient(135deg, #6366f1, #818cf8)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        Crawl Report Dashboard
+    </h1>
+    <p class="page-description">Upload a crawler CSV to see a comprehensive analysis of the crawled pages.</p>
+</div>
+
+<!-- Upload Section -->
+<div class="upload-section glass-card" id="upload-section">
+    <div class="file-upload" id="report-file-zone">
+        <input type="file" id="report-csv" accept=".csv" hidden>
+        <div class="file-upload-content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="40" height="40"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>Drop your <strong>crawler CSV</strong> here or <span class="file-browse">browse</span></p>
+            <span class="form-hint">Expected columns: URL, Page Title, HTTP Status, Depth, Notes</span>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard (hidden until data loads) -->
+<div id="dashboard" style="display:none;">
+    <!-- KPI Cards -->
+    <div class="stats-bar">
+        <div class="stat-card glass-card">
+            <div class="stat-icon" style="--accent: #6366f1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value" id="kpi-total">0</span>
+                <span class="stat-label">Total Pages</span>
+            </div>
+        </div>
+        <div class="stat-card glass-card">
+            <div class="stat-icon" style="--accent: #10b981">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value" id="kpi-ok">0</span>
+                <span class="stat-label">OK (200)</span>
+            </div>
+        </div>
+        <div class="stat-card glass-card">
+            <div class="stat-icon" style="--accent: #ef4444">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value" id="kpi-err">0</span>
+                <span class="stat-label">Errors</span>
+            </div>
+        </div>
+        <div class="stat-card glass-card">
+            <div class="stat-icon" style="--accent: #f59e0b">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+            </div>
+            <div class="stat-info">
+                <span class="stat-value" id="kpi-maxdepth">0</span>
+                <span class="stat-label">Max Depth</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+        <div class="chart-card glass-card">
+            <h3 class="chart-title">HTTP Status Distribution</h3>
+            <div class="chart-container"><canvas id="statusChart"></canvas></div>
+        </div>
+        <div class="chart-card glass-card">
+            <h3 class="chart-title">Pages by Depth Level</h3>
+            <div class="chart-container"><canvas id="depthChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-card glass-card">
+        <div class="table-header">
+            <h3 class="chart-title">All Crawled Pages</h3>
+            <div class="table-controls">
+                <input type="text" class="form-input table-search" id="table-search" placeholder="Search URLs...">
+                <select class="form-input table-filter" id="status-filter">
+                    <option value="">All Statuses</option>
+                    <option value="200">200 OK</option>
+                    <option value="error">Errors</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table class="data-table" id="data-table">
+                <thead><tr id="table-head"></tr></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+        <div class="table-footer">
+            <span id="table-count">0 rows</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    setupFileUpload('report-file-zone', 'report-csv', null);
+    let allData = [];
+
+    document.getElementById('report-csv').addEventListener('change', async function() {
+        if (!this.files.length) return;
+        const formData = new FormData();
+        formData.append('csv_file', this.files[0]);
+
+        try {
+            const resp = await fetch('/api/parse-csv', { method: 'POST', body: formData });
+            const result = await resp.json();
+            if (result.error) { alert(result.error); return; }
+
+            allData = result.rows;
+            document.getElementById('upload-section').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            buildDashboard(result.headers, result.rows);
+        } catch (err) { alert('Failed to parse CSV: ' + err.message); }
+    });
+
+    function buildDashboard(headers, rows) {
+        const total = rows.length;
+        const ok = rows.filter(r => r['HTTP Status'] === '200').length;
+        const err = total - ok;
+        const depths = rows.map(r => parseInt(r['Depth']) || 0);
+        const maxDepth = depths.length ? Math.max(...depths) : 0;
+
+        document.getElementById('kpi-total').textContent = total;
+        document.getElementById('kpi-ok').textContent = ok;
+        document.getElementById('kpi-err').textContent = err;
+        document.getElementById('kpi-maxdepth').textContent = maxDepth;
+
+        // Status chart
+        const statusCounts = {};
+        rows.forEach(r => {
+            const s = r['HTTP Status'] || 'Unknown';
+            statusCounts[s] = (statusCounts[s] || 0) + 1;
+        });
+        const statusColors = { '200': '#10b981', '301': '#f59e0b', '302': '#f59e0b', '404': '#ef4444', '500': '#ef4444', 'ERR': '#dc2626' };
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(statusCounts),
+                datasets: [{
+                    data: Object.values(statusCounts),
+                    backgroundColor: Object.keys(statusCounts).map(k => statusColors[k] || '#6366f1'),
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family: 'Inter' } } }
+                },
+                cutout: '65%',
+            }
+        });
+
+        // Depth chart
+        const depthCounts = {};
+        depths.forEach(d => { depthCounts[d] = (depthCounts[d] || 0) + 1; });
+        const sortedDepths = Object.keys(depthCounts).sort((a, b) => a - b);
+        new Chart(document.getElementById('depthChart'), {
+            type: 'bar',
+            data: {
+                labels: sortedDepths.map(d => `Depth ${d}`),
+                datasets: [{
+                    label: 'Pages',
+                    data: sortedDepths.map(d => depthCounts[d]),
+                    backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                    borderColor: '#6366f1',
+                    borderWidth: 1,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+                }
+            }
+        });
+
+        // Table
+        const displayHeaders = headers.filter(h => h);
+        const headRow = document.getElementById('table-head');
+        headRow.innerHTML = displayHeaders.map(h => `<th>${h}</th>`).join('');
+
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = data.slice(0, 500).map(row => {
+                const status = row['HTTP Status'] || '';
+                const cls = status === '200' ? 'row-ok' : (status.startsWith('4') || status.startsWith('5') || status === 'ERR' ? 'row-err' : 'row-warn');
+                return `<tr class="${cls}">${displayHeaders.map(h => `<td>${row[h] || ''}</td>`).join('')}</tr>`;
+            }).join('');
+            document.getElementById('table-count').textContent = `${data.length} rows` + (data.length > 500 ? ' (showing first 500)' : '');
+        }
+
+        renderTable(rows);
+
+        document.getElementById('table-search').addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            const statusF = document.getElementById('status-filter').value;
+            let filtered = allData;
+            if (q) filtered = filtered.filter(r => Object.values(r).some(v => (v||'').toLowerCase().includes(q)));
+            if (statusF === '200') filtered = filtered.filter(r => r['HTTP Status'] === '200');
+            else if (statusF === 'error') filtered = filtered.filter(r => r['HTTP Status'] !== '200');
+            renderTable(filtered);
+        });
+
+        document.getElementById('status-filter').addEventListener('change', function() {
+            document.getElementById('table-search').dispatchEvent(new Event('input'));
+        });
+    }
+});
+</script>
+{% endblock %}

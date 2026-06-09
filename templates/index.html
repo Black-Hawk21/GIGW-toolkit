@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}STQC GIGW 3.0 Toolkit — Home{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <span class="title-accent">GIGW 3.0</span> Accessibility Toolkit
+    </h1>
+    <p class="page-description">
+        Comprehensive suite of tools for auditing government websites against WCAG and GIGW standards.
+        Run automated tests, analyze results, and generate detailed compliance reports.
+    </p>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+    <div class="stat-card glass-card">
+        <div class="stat-icon" style="--accent: #6366f1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">4</span>
+            <span class="stat-label">Audit Tools</span>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-icon" style="--accent: #06b6d4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">WCAG 2.1</span>
+            <span class="stat-label">Standard</span>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-icon" style="--accent: #10b981">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">Live</span>
+            <span class="stat-label">Real-time Output</span>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-icon" style="--accent: #f59e0b">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20V10"/>
+                <path d="M18 20V4"/>
+                <path d="M6 20v-4"/>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">Visual</span>
+            <span class="stat-label">Reports & Charts</span>
+        </div>
+    </div>
+</div>
+
+<!-- Tool Cards -->
+<div class="tool-grid">
+    <!-- Crawler -->
+    <div class="tool-card glass-card" id="card-crawler">
+        <div class="tool-card-glow" style="--glow-color: #6366f1"></div>
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background: linear-gradient(135deg, #6366f1, #818cf8)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                </svg>
+            </div>
+            <div class="tool-badge">No Upload</div>
+        </div>
+        <h2 class="tool-card-title">Web Crawler</h2>
+        <p class="tool-card-desc">
+            Exhaustively crawls a website domain, discovering every internal page reachable from the start URL. 
+            Generates a complete page inventory with HTTP status codes, page titles, and link depth.
+        </p>
+        <div class="tool-card-tags">
+            <span class="tag">GIGW 3.0</span>
+            <span class="tag">Full Domain</span>
+            <span class="tag">Auto Discovery</span>
+        </div>
+        <div class="tool-card-actions">
+            <a href="/tool/crawler" class="btn btn-primary" id="btn-run-crawler">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Run Tool
+            </a>
+            <a href="/summary/crawler" class="btn btn-ghost" id="btn-report-crawler">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
+                </svg>
+                Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Alt Text -->
+    <div class="tool-card glass-card" id="card-alt-text">
+        <div class="tool-card-glow" style="--glow-color: #06b6d4"></div>
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background: linear-gradient(135deg, #06b6d4, #22d3ee)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+            </div>
+            <div class="tool-badge tool-badge-upload">CSV Upload</div>
+        </div>
+        <h2 class="tool-card-title">Alt Text Checker</h2>
+        <p class="tool-card-desc">
+            WCAG 1.1.1 compliance checker for non-text content. Scans every page from a crawl CSV and checks
+            for missing or placeholder alt text on images, SVGs, and image inputs.
+        </p>
+        <div class="tool-card-tags">
+            <span class="tag">WCAG 1.1.1</span>
+            <span class="tag">Images & SVG</span>
+            <span class="tag">Alt Text</span>
+        </div>
+        <div class="tool-card-actions">
+            <a href="/tool/alt-text" class="btn btn-primary" id="btn-run-alt">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Run Tool
+            </a>
+            <a href="/summary/alt-text" class="btn btn-ghost" id="btn-report-alt">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
+                </svg>
+                Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Contrast -->
+    <div class="tool-card glass-card" id="card-contrast">
+        <div class="tool-card-glow" style="--glow-color: #10b981"></div>
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background: linear-gradient(135deg, #10b981, #34d399)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 2v20"/>
+                    <path d="M12 2a10 10 0 010 20" fill="white" opacity="0.3"/>
+                </svg>
+            </div>
+            <div class="tool-badge tool-badge-upload">CSV Upload</div>
+        </div>
+        <h2 class="tool-card-title">Contrast Checker</h2>
+        <p class="tool-card-desc">
+            WCAG 1.4.3/1.4.6 colour contrast auditor. Tests foreground/background colour pairs against
+            AA or AAA thresholds for both normal and large text.
+        </p>
+        <div class="tool-card-tags">
+            <span class="tag">WCAG 1.4.3</span>
+            <span class="tag">AA / AAA</span>
+            <span class="tag">Colour Pairs</span>
+        </div>
+        <div class="tool-card-actions">
+            <a href="/tool/contrast" class="btn btn-primary" id="btn-run-contrast">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Run Tool
+            </a>
+            <a href="/summary/contrast" class="btn btn-ghost" id="btn-report-contrast">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
+                </svg>
+                Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Media Crawler -->
+    <div class="tool-card glass-card" id="card-media">
+        <div class="tool-card-glow" style="--glow-color: #f59e0b"></div>
+        <div class="tool-card-header">
+            <div class="tool-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <polygon points="23 7 16 12 23 17 23 7"/>
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+            </div>
+            <div class="tool-badge tool-badge-upload">CSV Upload</div>
+        </div>
+        <h2 class="tool-card-title">Media Crawler</h2>
+        <p class="tool-card-desc">
+            Scans crawled pages for all embedded media: images, videos, audio, iframes, SVGs, and CSS 
+            background images. Verifies media availability via HEAD requests.
+        </p>
+        <div class="tool-card-tags">
+            <span class="tag">Images</span>
+            <span class="tag">Video & Audio</span>
+            <span class="tag">SVG / CSS</span>
+        </div>
+        <div class="tool-card-actions">
+            <a href="/tool/media" class="btn btn-primary" id="btn-run-media">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Run Tool
+            </a>
+            <a href="/summary/media" class="btn btn-ghost" id="btn-report-media">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
+                </svg>
+                Report
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Pipeline Info -->
+<div class="pipeline-section glass-card">
+    <h2 class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Recommended Pipeline
+    </h2>
+    <div class="pipeline-flow">
+        <div class="pipeline-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+                <h3>Web Crawler</h3>
+                <p>Start with the crawler to discover all pages on your target domain.</p>
+            </div>
+        </div>
+        <div class="pipeline-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+        <div class="pipeline-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+                <h3>Alt Text Checker</h3>
+                <p>Feed the crawl CSV to check all images for WCAG 1.1.1 compliance.</p>
+            </div>
+        </div>
+        <div class="pipeline-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+        <div class="pipeline-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+                <h3>Contrast Checker</h3>
+                <p>Audit colour contrast ratios against WCAG 1.4.3/1.4.6 thresholds.</p>
+            </div>
+        </div>
+        <div class="pipeline-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+        <div class="pipeline-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+                <h3>Media Crawler</h3>
+                <p>Discover and verify all media assets embedded across the site.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

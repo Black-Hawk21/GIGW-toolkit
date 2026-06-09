@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Media Crawler — STQC Toolkit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="/">Home</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+        <span>Media Crawler</span>
+    </div>
+    <h1 class="page-title">
+        <div class="tool-icon-inline" style="background: linear-gradient(135deg, #f59e0b, #fbbf24)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+        </div>
+        Media Crawler
+    </h1>
+    <p class="page-description">Scan crawled pages for all embedded media: images, videos, audio, iframes, SVGs, and CSS background images.</p>
+</div>
+
+<div class="tool-layout">
+    <div class="config-panel glass-card">
+        <h2 class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Configuration
+        </h2>
+
+        <form id="mediaForm" class="tool-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="media-csv" class="form-label">Crawl CSV <span class="required">*</span></label>
+                <div class="file-upload" id="media-file-zone">
+                    <input type="file" id="media-csv" name="csv_file" accept=".csv" required hidden>
+                    <div class="file-upload-content">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <p>Drop your CSV file here or <span class="file-browse">browse</span></p>
+                        <span class="file-name" id="media-file-name"></span>
+                    </div>
+                </div>
+                <span class="form-hint">CSV from Web Crawler (needs URL column)</span>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="media-delay" class="form-label">Delay (seconds)</label>
+                    <input type="number" id="media-delay" name="delay" class="form-input" value="0.5" min="0" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="media-timeout" class="form-label">Timeout (seconds)</label>
+                    <input type="number" id="media-timeout" name="timeout" class="form-input" value="10" min="1">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="media-format" class="form-label">Output Format</label>
+                    <select id="media-format" name="format" class="form-input">
+                        <option value="csv" selected>CSV</option>
+                        <option value="xlsx">Excel (.xlsx)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-checkbox" style="margin-top: 28px;">
+                        <input type="checkbox" id="media-noverify" name="no_verify">
+                        <span class="checkmark"></span>
+                        Skip media HEAD requests
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-run" id="media-run-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Start Scan
+            </button>
+        </form>
+    </div>
+
+    <div class="output-panel glass-card">
+        <div class="output-header">
+            <h2 class="panel-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                Live Output
+            </h2>
+            <div class="output-status" id="output-status">
+                <span class="status-dot"></span><span class="status-text">Idle</span>
+            </div>
+        </div>
+        <div class="terminal" id="terminal">
+            <div class="terminal-content" id="terminal-content">
+                <p class="terminal-placeholder">Upload a crawl CSV and click "Start Scan" to begin...</p>
+            </div>
+        </div>
+        <div class="output-actions" id="output-actions" style="display:none;">
+            <span class="output-note">Output files saved to server. Check the Report page for dashboards.</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const socket = io();
+    const form = document.getElementById('mediaForm');
+    const terminal = document.getElementById('terminal-content');
+    const statusEl = document.getElementById('output-status');
+    const actionsEl = document.getElementById('output-actions');
+    const runBtn = document.getElementById('media-run-btn');
+    let currentJobId = null;
+
+    setupFileUpload('media-file-zone', 'media-csv', 'media-file-name');
+
+    socket.on('tool_output', (data) => {
+        if (data.job_id === currentJobId) {
+            const placeholder = terminal.querySelector('.terminal-placeholder');
+            if (placeholder) placeholder.remove();
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            line.textContent = data.line;
+            terminal.appendChild(line);
+            terminal.parentElement.scrollTop = terminal.parentElement.scrollHeight;
+        }
+    });
+
+    socket.on('tool_complete', (data) => {
+        if (data.job_id === currentJobId) {
+            const line = document.createElement('div');
+            line.className = 'terminal-line terminal-success';
+            line.textContent = `\n✓ Completed in ${data.elapsed}s`;
+            terminal.appendChild(line);
+            statusEl.className = 'output-status status-done';
+            statusEl.querySelector('.status-text').textContent = `Done (${data.elapsed}s)`;
+            runBtn.disabled = false;
+            runBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Scan';
+            actionsEl.style.display = 'flex';
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fileInput = document.getElementById('media-csv');
+        if (!fileInput.files.length) { alert('Please upload a CSV file'); return; }
+
+        terminal.innerHTML = '';
+        actionsEl.style.display = 'none';
+        statusEl.className = 'output-status status-running';
+        statusEl.querySelector('.status-text').textContent = 'Running...';
+        runBtn.disabled = true;
+        runBtn.innerHTML = '<span class="spinner"></span> Running...';
+
+        const formData = new FormData();
+        formData.append('csv_file', fileInput.files[0]);
+        formData.append('delay', document.getElementById('media-delay').value);
+        formData.append('timeout', document.getElementById('media-timeout').value);
+        formData.append('format', document.getElementById('media-format').value);
+        formData.append('no_verify', document.getElementById('media-noverify').checked ? 'true' : 'false');
+
+        try {
+            const resp = await fetch('/api/run/media', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (data.error) { alert(data.error); runBtn.disabled = false; return; }
+            currentJobId = data.job_id;
+        } catch (err) {
+            alert('Failed to start: ' + err.message);
+            runBtn.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}
