@@ -1,7 +1,16 @@
-requests
-beautifulsoup4
-pandas
-openpyxl
-tinycss2
-gunicorn
-flask
+# Web framework
+Flask==3.1.*
+Flask-SocketIO==5.5.*
+gunicorn==23.*
+gevent==25.*
+gevent-websocket==0.10.*
+
+# Tool dependencies
+requests==2.32.*
+beautifulsoup4==4.13.*
+pandas==2.3.*
+openpyxl==3.1.*
+tinycss2==1.4.*
+
+# JS crawler (Playwright)
+playwright==1.60.*

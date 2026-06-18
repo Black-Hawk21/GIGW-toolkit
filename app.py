@@ -65,7 +65,13 @@ def parse_csv(filepath):
 
 def run_tool_process(job_id, cmd, cwd=None):
     """Run a CLI tool in a subprocess and stream output via SocketIO."""
-    jobs[job_id] = {"status": "running", "output": [], "start": time.time()}
+    # Job dict is pre-initialised by the caller before the thread starts.
+    print(f"[JOB {job_id}] Starting: {' '.join(cmd)}")
+
+    # Force UTF-8 on the child process so Unicode chars (─ ✓ ✗) don't
+    # crash with cp1252 on Windows.
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
 
     try:
         process = subprocess.Popen(
@@ -77,6 +83,7 @@ def run_tool_process(job_id, cmd, cwd=None):
             encoding="utf-8",
             errors="replace",
             bufsize=1,
+            env=env,
         )
 
         for line in iter(process.stdout.readline, ""):
@@ -86,28 +93,30 @@ def run_tool_process(job_id, cmd, cwd=None):
                 socketio.emit("tool_output", {
                     "job_id": job_id,
                     "line": line,
-                }, namespace="/")
+                })
 
         process.wait()
         elapsed = time.time() - jobs[job_id]["start"]
         jobs[job_id]["status"] = "done" if process.returncode in (0, 2) else "error"
         jobs[job_id]["elapsed"] = round(elapsed, 1)
         jobs[job_id]["returncode"] = process.returncode
+        print(f"[JOB {job_id}] Finished (exit={process.returncode}, {elapsed:.1f}s)")
 
         socketio.emit("tool_complete", {
             "job_id": job_id,
             "status": jobs[job_id]["status"],
             "elapsed": jobs[job_id]["elapsed"],
-        }, namespace="/")
+        })
 
     except Exception as e:
+        print(f"[JOB {job_id}] ERROR: {e}")
         jobs[job_id]["status"] = "error"
         jobs[job_id]["error"] = str(e)
         socketio.emit("tool_complete", {
             "job_id": job_id,
             "status": "error",
             "error": str(e),
-        }, namespace="/")
+        })
 
 
 # ── Routes: Pages ──────────────────────────────────────────────────────────────
@@ -120,6 +129,11 @@ def index():
 @app.route("/tool/crawler")
 def tool_crawler():
     return render_template("tool_crawler.html")
+
+
+@app.route("/tool/crawler-js")
+def tool_crawler_js():
+    return render_template("tool_crawler_js.html")
 
 
 @app.route("/tool/alt-text")
@@ -175,7 +189,7 @@ def api_run_crawler():
     out_file = str(OUTPUT_DIR / f"crawl_{job_id}.{fmt}")
 
     cmd = [
-        sys.executable, str(BASE_DIR / "crawler.py"),
+        sys.executable, "-u", str(BASE_DIR / "crawler.py"),
         "--url", url,
         "--depth", str(depth),
         "--delay", str(delay),
@@ -184,11 +198,54 @@ def api_run_crawler():
         "--output", out_file,
     ]
 
+    # Pre-initialise job dict before starting the thread
+    jobs[job_id] = {"status": "running", "output": [], "start": time.time(),
+                    "output_file": out_file}
+
     thread = threading.Thread(target=run_tool_process, args=(job_id, cmd))
     thread.daemon = True
     thread.start()
 
-    jobs[job_id]["output_file"] = out_file
+    return jsonify({"job_id": job_id, "output_file": os.path.basename(out_file)})
+
+
+@app.route("/api/run/crawler-js", methods=["POST"])
+def api_run_crawler_js():
+    data = request.json
+    url = data.get("url", "").strip()
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
+
+    depth     = data.get("depth", -1)
+    delay     = data.get("delay", 1.5)
+    timeout   = data.get("timeout", 20)
+    wait      = data.get("wait", 2000)
+    fmt       = data.get("format", "csv")
+    headless  = data.get("headless", True)
+
+    job_id   = str(uuid.uuid4())[:8]
+    out_file = str(OUTPUT_DIR / f"crawl_js_{job_id}.{fmt}")
+
+    cmd = [
+        sys.executable, "-u", str(BASE_DIR / "crawler_js.py"),
+        "--url", url,
+        "--depth", str(depth),
+        "--delay", str(delay),
+        "--timeout", str(timeout),
+        "--wait", str(wait),
+        "--format", fmt,
+        "--output", out_file,
+    ]
+    if not headless:
+        cmd.append("--no-headless")
+
+    jobs[job_id] = {"status": "running", "output": [], "start": time.time(),
+                    "output_file": out_file}
+
+    thread = threading.Thread(target=run_tool_process, args=(job_id, cmd))
+    thread.daemon = True
+    thread.start()
+
     return jsonify({"job_id": job_id, "output_file": os.path.basename(out_file)})
 
 
@@ -212,18 +269,20 @@ def api_run_alt_text():
     out_file = str(OUTPUT_DIR / f"alt_text_{job_id}.csv")
 
     cmd = [
-        sys.executable, str(BASE_DIR / "alt_text.py"),
+        sys.executable, "-u", str(BASE_DIR / "alt_text.py"),
         input_path, out_file,
         "--delay", str(delay),
     ]
     if limit:
         cmd.extend(["--limit", str(limit)])
 
+    jobs[job_id] = {"status": "running", "output": [], "start": time.time(),
+                    "output_file": out_file}
+
     thread = threading.Thread(target=run_tool_process, args=(job_id, cmd))
     thread.daemon = True
     thread.start()
 
-    jobs[job_id]["output_file"] = out_file
     return jsonify({"job_id": job_id, "output_file": os.path.basename(out_file)})
 
 
@@ -253,7 +312,7 @@ def api_run_contrast():
     os.makedirs(out_dir, exist_ok=True)
 
     cmd = [
-        sys.executable, str(BASE_DIR / "contrast_checker.py"),
+        sys.executable, "-u", str(BASE_DIR / "contrast_checker.py"),
         input_path,
         "--level", level,
         "--output", out_dir,
@@ -268,11 +327,13 @@ def api_run_contrast():
     if sample:
         cmd.extend(["--sample", str(sample)])
 
+    jobs[job_id] = {"status": "running", "output": [], "start": time.time(),
+                    "output_dir": out_dir}
+
     thread = threading.Thread(target=run_tool_process, args=(job_id, cmd))
     thread.daemon = True
     thread.start()
 
-    jobs[job_id]["output_dir"] = out_dir
     return jsonify({"job_id": job_id, "output_dir": f"contrast_{job_id}"})
 
 
@@ -298,7 +359,7 @@ def api_run_media():
     out_base  = str(OUTPUT_DIR / f"media_{job_id}")
 
     cmd = [
-        sys.executable, str(BASE_DIR / "media_crawler.py"),
+        sys.executable, "-u", str(BASE_DIR / "media_crawler.py"),
         "--input", input_path,
         "--output", out_base,
         "--format", fmt,
@@ -308,11 +369,13 @@ def api_run_media():
     if no_verify == "true":
         cmd.append("--no-verify")
 
+    jobs[job_id] = {"status": "running", "output": [], "start": time.time(),
+                    "output_base": out_base}
+
     thread = threading.Thread(target=run_tool_process, args=(job_id, cmd))
     thread.daemon = True
     thread.start()
 
-    jobs[job_id]["output_base"] = out_base
     return jsonify({"job_id": job_id, "output_base": f"media_{job_id}"})
 
 
@@ -387,6 +450,10 @@ def api_list_outputs(job_id):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    port  = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("RENDER") is None   # debug on locally, off on Render
+
     print(f"\n  STQC Web Dashboard")
-    print(f"  http://localhost:5000\n")
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True, allow_unsafe_werkzeug=True)
+    print(f"  http://localhost:{port}\n")
+    socketio.run(app, host="0.0.0.0", port=port, debug=debug,
+                 allow_unsafe_werkzeug=True)
